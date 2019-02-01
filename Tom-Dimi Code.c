@@ -3,16 +3,21 @@
 
 uint32_t LEDState = 0;
 
-void SysTick_Handler (void) {
-	buttonDetect();
-		
+int buttonDetect () {
+	if (GPIOA -> IDR &= 0x00000001)
+		return 1;
+	else 
+		return 0;
 }
-	
-//if (LEDState == 0) LEDState = 1;
-//else if (LEDState == 1) LEDState = 2;
-//else if (LEDState == 2) LEDState = 3;
-//else LEDState = 0;
-//}
+
+void SysTick_Handler (void) {
+	if (buttonDetect()==1){
+		LEDState = LEDState + 1;
+		if (LEDState == 4){
+			LEDState = 0;
+		}
+}
+}
 
 void greenLED_only (){
 		GPIOD -> BSRR =   0xE0001000; //green LED
@@ -30,14 +35,6 @@ void blueLED_only (){
 	GPIOD -> BSRR =   0x70008000;
 }
 
-int buttonDetect () {
-	if (GPIOA -> IDR &= 0x00000001)
-		return 1;
-	else 
-		return 0;
-	
-	
-}
 
 void initialiseLEDandButtonPorts(){
 	RCC->AHB1ENR = (RCC->AHB1ENR & 0x00000000) | 0x00000009;
@@ -51,20 +48,15 @@ void initialiseLEDandButtonPorts(){
 
 int main (void) {
 SystemCoreClockUpdate();
-SysTick_Config(SystemCoreClock/4);
+SysTick_Config(SystemCoreClock/6 );
 initialiseLEDandButtonPorts();
 SysTick_Handler ();
 while (1) {
 	if (GPIOA -> IDR &= 0x00000001){
-		if (LEDState == 0) GPIOD -> BSRR =   0xE0001000;
-		else if  (LEDState == 1) GPIOD -> BSRR =   0xD0002000;
-		else if  (LEDState == 2) GPIOD -> BSRR =   0xB0004000;
-		else GPIOD -> BSRR =   0x70008000;
+		if (LEDState == 0) greenLED_only();
+		else if  (LEDState == 1) orangeLED_only();
+		else if  (LEDState == 2) redLED_only();
+		else blueLED_only();
 		}
-//while (1) {
-//	buttonDetect ();
-	//GPIOD -> BSRR = 0x0000F000;
-	//if (GPIOA -> IDR &= 0x00000001){
-		//buttonDetect ();
 	}
 }
