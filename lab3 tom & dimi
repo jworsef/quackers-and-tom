@@ -1,0 +1,20 @@
+#include "STM32F407xx.h"
+#include "Board_LED.h"
+
+void initialiseAF(){
+	//enabling the clock
+	RCC->AHB1ENR = (RCC->AHB1ENR & 0x00000000) | 0x00000005;
+	//Timer 1 external triger and DAC out 1 enable
+	GPIOA -> MODER  = (GPIOA->MODER & 0xFCFFFBFF)|0x02000300 ;
+	//Input #14 ADC 1 enable
+	GPIOC -> MODER  = (GPIOC->MODER & 0xFFFFFBFF)|0x00000300 ;
+	//setting DAC 1 as an output
+	GPIOA -> OTYPER = (GPIOA->OTYPER & 0xFFFFFFEF);
+	//setting PA12 to AF1
+	GPIOA -> AFR[1] = (GPIOA->AFR[1] & 0xFFF0FFFF)| 0x00010000;
+	
+}
+
+int main (void) {
+	initialiseAF();
+}
