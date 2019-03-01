@@ -1,0 +1,283 @@
+#define cs 10
+#define nullptr ((void*)0)
+
+int checkButton(inputFromButton)
+{
+		if(inputFromButton goes high)
+		{
+			while(1)
+			{
+				if(inputFromButton goes low)
+				{
+					return 1;
+				}	
+			}
+		}
+		return 0;
+}
+
+void Vfunc(struct ValuesList* list)
+{
+	//Voltmeter Mode and accuracy (displayed for 3sec)
+	
+	while(1)
+	{
+
+		//function that takes a volt value from 0-3 Volt
+		//and returns a value from -10 to 10 V
+		
+		//if the user wants to store a value store the value
+		if(checkButton(storeButton)==1)
+		{
+			storeValue(list,valueTHATisDISPLAYED, "VorMV")
+		}
+		
+		if(checkButton(changeMenuButton)==1)
+		{
+			break;
+		}
+	}
+}
+
+void Rfunc(struct ValuesList* list)
+{
+	//Ohmmeter Mode, what mode is at and accuracy (displayed for 3sec)
+	int Mode=0;
+	while(1)
+	{
+		if(checkButton(changeModeButton)==1)
+		{
+			Mode~; // inverting mode which is one bit and can go from zero to 1
+			//print at lcd the mode we are going at for 2 sec
+		}
+		
+		if(Mode==0)
+		{
+			//we will check A pin and display at lcd the value we think the resistor has
+			
+			//if the user wants to store a value store the value
+			if(checkButton(storeButton)==1)
+			{
+				storeValue(list,valueTHATisDISPLAYED, "Ohm")
+			}
+		}
+		else if(Mode==1)
+		{
+			//we will check B pin and display at lcd the value we think the resistor has
+			
+			//if the user wants to store a value store the value
+			if(checkButton(storeButton)==1)
+			{
+				storeValue(list,valueTHATisDISPLAYED, "KOhm")
+			}
+		}
+		
+		
+		if(checkButton(changeMenuButton)==1)
+		{
+			break;
+		}
+	}
+}	
+
+void Ifunc(struct ValuesList* list)
+{
+	//current mode and accuracy (displayed for 3sec)
+///for calculating only low current else we need to add modes
+	while(1)
+	{
+		//function that takes a voltage value for low current
+		//and returns the current value
+		
+		//if the user wants to store a value store the value
+		if(checkButton(storeButton)==1)
+		{
+			storeValue(list,valueTHATisDISPLAYED, "AmpsOrMiliAmps")
+		}
+		
+		if(checkButton(changeMenuButton)==1)
+		{
+			break;
+		}
+	}
+}
+
+void Stored_func(struct ValuesList* list)
+{
+	//current mode and number of stored values(?) (displayed for 3sec)
+	
+	struct ValuesNode* displayedNode=list->head;
+	
+	while(1)
+	{
+		//if list is empty let the user know
+		//else let the user interact with the list
+		if (list->size==0)
+		{
+			//DISPLAY AT THE LCD NOTHING STORED
+		}
+		else
+		{
+			printLCD(displayedNode);
+			if(checkButton(nextNodeButton)==1 && list->size!=1)
+			{
+				moveToNextNode(displayedNode); // this fucntion is really simple do we really need it ?
+			}
+			if(checkButton(prevNodeButton)==1 && list->size!=1)
+			{
+				moveToPrevNode(displayedNode); // this fucntion is really simple do we really need it ?
+			}
+		}
+		if(checkButton(changeMenuButton)==1)
+		{
+			break;
+		}
+	}
+}
+
+///////  lvl 3 requirement  //////
+
+/// STRUCTURE TO STORE VALUES
+
+struct ValuesList
+{
+	struct ValuesNode* head;
+	int size;
+}
+
+struct ValuesNode
+{
+	int value;
+	char unit[cs];
+	int readingnumber;
+	struct ValuesNode* next;
+	struct ValuesNode* prev;
+}
+
+struct ValuesNode* nodeConstructor(int value,char unit[],int readingnumber)
+{
+	struct ValuesNode* newNode;
+	
+	//reserve memory for the node
+	newNode = malloc(sizeof(struct ValuesNode));
+	
+	//initialise values
+	newNode->value=value;
+	newNode->readingnumber=readingnumber;
+	snprintf(newNode->unit,sizeof(newNode->unit),"%s",unit);
+	newNode->next=nullptr;
+	newNode->prev=nullptr;
+	
+	//return constructed node
+	return newNode;
+}
+
+void nodeDestructor(struct ValuesNode* node)
+{
+	free(node);
+}
+
+struct ValuesList* listConstructor()
+{
+	struct ValuesList* newList;
+	
+	//reserve memory for the list
+	newList->size=0;
+	newList->head=nullptr;
+	
+	//return constructed list
+	return newList;
+}
+
+//NOT GOING TO HAVE THIS FUNCTIONS HERE
+//INSTEAD WE ARE GOING TO MAKE THE storeValue func TO ONLY
+//STORE 10 VALUES
+/*
+///Function to check if heap and stack are close 
+//if they are afar green led ON
+//if they are getting closer orange led ON 
+//if they are getting really close display worning in lcd and red led ON
+//if they are getting close to crashing reset everything 
+void stackandheap()
+{
+	//check the distance of stack and heap 
+	//if they are afar green led ON
+	//if they are getting closer orange led ON 
+	//if they are getting really close display worning in lcd and red led ON
+	//if they are getting close to crashing reset everything 
+}
+*/
+
+/// FUNCTIONS FOR CREATING LIST
+/* We will have a button that stores a new value once pressed
+every mode (I,R,V) will pass a different unit (I->Amp,R->Ohm,V->Volt,etc.)
+we want this function to add the new value at the start of the list and when we print 
+it we are going to print it from the last value we stored having the ability to go to the next and prev
+we can also go from the first to last because it is going to be a doubly linked circular list */
+
+void storeValue(struct ValuesList* list,int value, char unit[])
+{
+	struct ValuesNode* newNode;
+	struct ValuesNode* tmpNode; //node to be destructed if needed
+	
+	//incrementing the size of the list
+	ValuesList->size++;
+	
+	//setting the new node
+	newNode=nodeConstructor(value,unit,ValuesList->size);
+	
+	//if list is empty
+	if(ValuesList->head==nullptr)
+	{
+		list->head=newNode;
+		newNode->next=newNode;	//to help with 
+		newNode->prev=newNode;	//overall logic
+	}
+	//if list isn't empty
+	else
+	{
+		//previous node of current head connection
+		//with newNode
+		newNode->prev=list->head->prev;
+		list->head->prev->next=newNode;
+		
+		//current head connection with newNode
+		newNode->next=list->head;
+		list->head->prev=newNode;
+		
+		//changing head to newNode
+		list->head=newNode;
+	}
+	
+	//if size of list is bigger than 10 then delete the first value that was stored
+	//so that the heap and the stack will not crash 
+	if(ValuesList->size>10)
+	{
+		//setting tmpNode to the node that was saved earlier
+		tmpNode=newNode->prev;
+		
+		//changing the connection in the list
+		tmpNode->prev->next=tmpNode->next;
+		newNode->prev=tmpNode->prev;
+		
+		//destroying the node
+		nodeDestructor(tmpNode);
+	}
+	//print at LCD "VALUE STORED"
+}
+
+void printLCD(struct ValuesNode* DisplayedNode)
+{
+// print node at LCD
+}
+
+void moveToNextNode(struct ValuesNode* DisplayedNode)
+{
+	DisplayedNode=DisplayedNode->next;
+}
+
+void moveToPrevNode(struct ValuesNode* DisplayedNode)
+{
+	DisplayedNode=DisplayedNode->prev;
+}
+
