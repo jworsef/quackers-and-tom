@@ -5,8 +5,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-int sahHighOn = 0;
-int sahLowOn = 0;	
+int sahHighOn = 1;
+int sahLowOn = 1 ;	
+float voltsSaHMax; //Max sample and hold value
+float voltsSaHMin; //Min sample and hold value
+
 
 void EXTI15_10_IRQHandler (void) { 
 	if (GPIOE -> IDR &= 0x00004000){
@@ -90,7 +93,8 @@ float voltsFromADC(){ //Reads the value from the ADC and returns a voltage
 
 char* arvStringfromVolt(float volts) //returns an autoranged value as a string from a given voltage
 {
-	char* stringOut;
+	char stringOut[10];
+	char* ptrStringOut = stringOut;
 	if (volts < 1) 
 	{
 		
@@ -107,24 +111,16 @@ char* arvStringfromVolt(float volts) //returns an autoranged value as a string f
 	else {
 		snprintf (stringOut, 10, "%.3f V", volts);
 	}
-	return stringOut;
+	// TEST: PB_LCD_WriteString(stringOut, 10);
 	
-	/* I think there's something wrong here that's causing this to display "p |||"*/
-
+  return ptrStringOut;
 }
 
 void displayVoltage(float voltsADC) //Writes a voltage to the LCD
 {
 	char LCD_out[7];
-	char LCD_min[7];
-	char LCD_max[7];
+	char LCD_minmax[15];
 
-	float voltsSaHMax = voltsADC; //Max sample and hold value
-	float voltsSaHMin = voltsADC; //Min sample and hold value, both initialised to the initial value
-	
-	char LCD_test[7] = "test";
-	
-	PB_LCD_Clear();
 	
 		
 	//Sample and hold
@@ -135,19 +131,20 @@ void displayVoltage(float voltsADC) //Writes a voltage to the LCD
 	}
 	if (sahLowOn == 1)
 	{
-		voltsSaHMin = compReturnHigh(voltsADC, voltsSaHMin);
+		voltsSaHMin = compReturnLow(voltsADC, voltsSaHMin);
 	}
 	
 	//Auto-ranging 
 	strcpy(LCD_out, arvStringfromVolt(voltsADC));
-	strcpy(LCD_min, arvStringfromVolt(voltsSaHMin));
-	strcpy(LCD_min, arvStringfromVolt(voltsSaHMax));
+	strcpy(LCD_minmax, arvStringfromVolt(voltsSaHMin));
+	strncat(LCD_minmax, arvStringfromVolt(voltsSaHMax), 16);
 	
 	//LCD write out
+	PB_LCD_GoToXY(0, 0);
 	PB_LCD_WriteString(LCD_out, 10);
-	//PB_LCD_GoToXY(0, 1);
-	//PB_LCD_WriteString(LCD_min, 10);
-	//PB_LCD_WriteString(LCD_max, 10);
+	PB_LCD_GoToXY(0, 1);
+	PB_LCD_WriteString(LCD_minmax, 16);
+
 }
  
  void SysTick_Handler (void) 
