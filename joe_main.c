@@ -5,24 +5,50 @@
 #include <stdlib.h>
 #include <string.h>
 
-int sahHighOn = 1;
-int sahLowOn = 1 ;	
+int sahHighOn = 0;
+int sahLowOn = 0;	
+int LEDState;
 float voltsSaHMax; //Max sample and hold value
 float voltsSaHMin; //Min sample and hold value
+float VoltsReadADC();
 
+void initialiseLED(){
+	GPIOD -> MODER  = (GPIOD->MODER & 0x00FFFFFF)|0x55000000 ;//| GPIOD -> MODER;
+	GPIOD -> OTYPER = (GPIOD->OTYPER & 0xFFFF0000) ;//| GPIOD -> OTYPER;
+	GPIOD -> PUPDR  = (GPIOD->PUPDR & 0x00000000) ;//| GPIOD -> PUPDR;
+	GPIOD -> OSPEEDR = (GPIOD->OSPEEDR & 0x00000000) ;
+}
 
 void EXTI15_10_IRQHandler (void) { 
 	if (GPIOE -> IDR &= 0x00004000){
 		EXTI -> PR = EXTI_PR_PR14;
 		//enter here what you want to do when SW8 is pressed and remove LEDState if wanted
-		sahHighOn = 1 - sahHighOn; //Toggle whether you're sample and holding high values.
-	}
+		sahHighOn = 1 -sahHighOn;
+		voltsSaHMax = VoltsReadADC();
 		
+	}
 	else if (GPIOE -> IDR &= 0x00008000){
 		EXTI -> PR = EXTI_PR_PR15;
 		//enter here what you want to do when SW9 is pressed and remove LEDState if wanted
-		sahLowOn = 1 - sahLowOn; //Toggle whether you're sample and holding low values.
+		sahLowOn = 1 - sahLowOn;
+		voltsSaHMin = VoltsReadADC();
 	}
+}
+
+void greenLED_only (){
+		GPIOD -> BSRR =   0xE0001000; //green LED
+}
+
+void orangeLED_only (){
+	GPIOD -> BSRR =   0xD0002000; // orange LED
+}
+
+void redLED_only (){
+	GPIOD -> BSRR =   0xB0004000; // red LED
+}
+
+void blueLED_only (){
+	GPIOD -> BSRR =   0x70008000; // blue LED
 }
 
 void initialiseAF(){
@@ -77,17 +103,20 @@ void ADC_Initialise (){
 	ADC1 -> CR1  = (ADC1->CR1 & 0xFFFFF7FF)|0x000000800;
 }
 
-float voltsFromADC(){ //Reads the value from the ADC and returns a voltage	
+float VoltsReadADC(){ //Reads the value from the ADC and returns a voltage	
 	
 	ADC1 -> CR2  = (ADC1->CR2 & 0xBFFFFFFF)|0x40000000;
 	
 	if (ADC -> CSR &= 0x00000002){
-		float ADCconv;
+		float ADCValue;
 		
-		ADCconv = ADC1 -> DR;
-		DAC -> DHR12R1 = ADCconv;
-		ADCconv = (ADCconv/4096)*3;
-		return ADCconv;
+		ADCValue = ADC1 -> DR;
+		DAC -> DHR12R1 = ADCValue;
+		return ((ADCValue/4096)*3);
+	}
+	else
+	{
+		return VoltsReadADC(); //And hope it doesn't fail more than once
 	}
 }
 
@@ -95,22 +124,51 @@ char* arvStringfromVolt(float volts) //returns an autoranged value as a string f
 {
 	char stringOut[10];
 	char* ptrStringOut = stringOut;
-	if (volts < 1) 
+	/*if (volts <= 0) 
 	{
 		
 		// always 4 s.f.
 		if (volts >= 0.1)
 		{
-			snprintf (stringOut, 10, "%.1f mV", volts*1000);
+			snprintf (stringOut, 10, "%.1fmV ", volts*1000);
 		}
 		else
 		{
-			snprintf (stringOut, 10, "%.2f mV", volts*1000);
+			if (volts >= 0.01)
+			{
+				snprintf (stringOut, 10, "%.2fmV ", volts*1000);
+			}
+			
+			else
+			{
+				snprintf (stringOut, 10, "%.3fmV ", volts*1000);
+			}
 		}
 	}
-	else {
-		snprintf (stringOut, 10, "%.3f V", volts);
+	else {*/
+	if (volts >= 1)
+	{
+		snprintf (stringOut, 10, "%.3fV ", volts);
 	}
+	else
+	{
+		if (volts >= 0.1)
+		{
+			snprintf (stringOut, 10, "%.1fmV ", volts*1000);
+		}
+		else 
+		{
+			if (volts >= 0.01)
+			{
+				snprintf (stringOut, 10, "%.2fmV ", volts*1000);
+			}
+			else 
+			{
+				snprintf (stringOut, 10, "%.3fmV ", volts*1000);
+			}
+		}
+	}
+		//}
 	// TEST: PB_LCD_WriteString(stringOut, 10);
 	
   return ptrStringOut;
@@ -118,11 +176,9 @@ char* arvStringfromVolt(float volts) //returns an autoranged value as a string f
 
 void displayVoltage(float voltsADC) //Writes a voltage to the LCD
 {
-	char LCD_out[7];
+	char LCD_out[15];
 	char LCD_minmax[15];
-
 	
-		
 	//Sample and hold
 	
 	if (sahHighOn == 1)
@@ -136,14 +192,20 @@ void displayVoltage(float voltsADC) //Writes a voltage to the LCD
 	
 	//Auto-ranging 
 	strcpy(LCD_out, arvStringfromVolt(voltsADC));
-	strcpy(LCD_minmax, arvStringfromVolt(voltsSaHMin));
-	strncat(LCD_minmax, arvStringfromVolt(voltsSaHMax), 16);
 	
 	//LCD write out
-	PB_LCD_GoToXY(0, 0);
-	PB_LCD_WriteString(LCD_out, 10);
-	PB_LCD_GoToXY(0, 1);
-	PB_LCD_WriteString(LCD_minmax, 16);
+	PB_LCD_Clear();
+	//PB_LCD_GoToXY(0, 0);
+
+	PB_LCD_WriteString(LCD_out, 16);
+	
+	if (sahHighOn == 1 && sahLowOn == 1)
+	{
+		strcpy(LCD_minmax, arvStringfromVolt(voltsSaHMin));
+  	strncat(LCD_minmax, arvStringfromVolt(voltsSaHMax), 16);
+		PB_LCD_GoToXY(0, 1);
+		PB_LCD_WriteString(LCD_minmax, 16);
+	}
 
 }
  
@@ -153,17 +215,42 @@ void displayVoltage(float voltsADC) //Writes a voltage to the LCD
  
 int main (void) {
 	
+	RCC -> AHB1ENR = (RCC->APB1ENR & 0xFFFFFFE7) | 0x00000018;
+		
+	RCC -> APB2ENR = (RCC -> APB2ENR & 0xFFFFBFFF) | 0x00004000;
+
+	GPIOE -> MODER = (GPIOE -> MODER & 0x0FFFFFFF);
+		
+	GPIOE -> PUPDR = (GPIOE -> PUPDR & 0x0FFFFFFF) | 0xA0000000;
+		
+	SYSCFG -> EXTICR[3] = (SYSCFG -> EXTICR[3] & 0xFFFF00FF) | 0x00004400;
+	
+	EXTI -> IMR = (EXTI -> IMR & 0xFFFF3FFF) |	0x0000C000;
+		
+	EXTI -> RTSR = (EXTI -> RTSR & 0xFFFF3FFF) |	0x0000C000;
+
+	EXTI -> FTSR = (EXTI -> FTSR & 0xFFFF3FFF);
+	
+	NVIC_EnableIRQ(EXTI15_10_IRQn);
+	initialiseLED();
+	EXTI15_10_IRQHandler ();
+	
 	SystemCoreClockUpdate();
-	initialiseAF();
+	//initialiseAF();
 	ADC_Initialise ();
 	PB_LCD_Init();
+	LED_Initialize();
 	SysTick_Config(SystemCoreClock/2); 
 	
-	while(1){
-		int i = 0;
-		displayVoltage(voltsFromADC());
-		while(i<1000000){
+	//displayVoltage(VoltsReadADC());
+	
+	while(1)
+	{
+		int i = 0;	
+		displayVoltage(VoltsReadADC());
+		while(i<1000000)
+		{
 			i=i+1;
 		}
 	}
-}
+} 
