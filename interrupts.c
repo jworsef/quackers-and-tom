@@ -14,15 +14,40 @@ void initialiseLED(){
 }
 
 void EXTI15_10_IRQHandler (void) { 
-	if (GPIOE -> IDR &= 0x00004000){
-		EXTI -> PR = EXTI_PR_PR14;
-		//enter here what you want to do when SW8 is pressed and remove LEDState if wanted
-		LEDState = 0;
-	}
-	else if (GPIOE -> IDR &= 0x00008000){
+	if (GPIOE -> IDR &= 0x00008000){
 		EXTI -> PR = EXTI_PR_PR15;
-		//enter here what you want to do when SW9 is pressed and remove LEDState if wanted
-		LEDState = 1;
+		//enter here what you want to do when SW9 is pressed
+	}
+	else if (GPIOE -> IDR &= 0x00004000){
+		EXTI -> PR = EXTI_PR_PR14;
+		//enter here what you want to do when SW8 is pressed
+	}
+	else if (GPIOE -> IDR &= 0x00002000){
+		EXTI -> PR = EXTI_PR_PR13;
+		////enter here what you want to do when SW7 is pressed
+	}
+	else if (GPIOE -> IDR &= 0x00001000){
+		EXTI -> PR = EXTI_PR_PR12;
+		//enter here what you want to do when SW6 is pressed
+	}
+	else if (GPIOE -> IDR &= 0x00000800){
+		EXTI -> PR = EXTI_PR_PR11;
+		//enter here what you want to do when SW5 is pressed
+	}
+	else if (GPIOE -> IDR &= 0x00000400){
+		EXTI -> PR = EXTI_PR_PR10;
+		//enter here what you want to do when SW4 is pressed
+	}
+}
+
+void EXTI9_5_IRQHandler (void) { 
+ if (GPIOE -> IDR &= 0x00000200){
+		EXTI -> PR = EXTI_PR_PR9;
+		//enter here what you want to do when SW3 is pressed
+	}
+	else if (GPIOE -> IDR &= 0x00000010){
+		EXTI -> PR = EXTI_PR_PR8;
+		//enter here what you want to do when SW2 is pressed
 	}
 }
 
@@ -51,17 +76,21 @@ int main (void) {
 		
 	GPIOE -> PUPDR = (GPIOE -> PUPDR & 0x0FFFFFFF) | 0xA0000000;
 		
-	SYSCFG -> EXTICR[3] = (SYSCFG -> EXTICR[3] & 0xFFFF00FF) | 0x00004400;
+	SYSCFG -> EXTICR[2] = (SYSCFG -> EXTICR[2] & 0xFFFF0000) | 0x00004444;
 	
-	EXTI -> IMR = (EXTI -> IMR & 0xFFFF3FFF) |	0x0000C000;
+	SYSCFG -> EXTICR[3] = (SYSCFG -> EXTICR[3] & 0xFFFF0000) | 0x00004444;
+	
+	EXTI -> IMR = (EXTI -> IMR & 0xFFFF00FF) |	0x0000FF00;
 		
-	EXTI -> RTSR = (EXTI -> RTSR & 0xFFFF3FFF) |	0x0000C000;
+	EXTI -> RTSR = (EXTI -> RTSR & 0xFFFF00FF) |	0x0000FF00;
 
-	EXTI -> FTSR = (EXTI -> FTSR & 0xFFFF3FFF);
+	EXTI -> FTSR = (EXTI -> FTSR & 0xFFFF00FF);
 	
 	NVIC_EnableIRQ(EXTI15_10_IRQn);
+	NVIC_EnableIRQ(EXTI9_5_IRQn);
 	initialiseLED();
 	EXTI15_10_IRQHandler ();
+	EXTI9_5_IRQHandler ();
 	
 	while(1){
 		// change this for other function that you want to happen dependant on 
