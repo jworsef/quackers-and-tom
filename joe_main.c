@@ -4,6 +4,7 @@
 #include <stdio.h> 
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 int sahOn = 0;	
 int LEDState;
@@ -11,7 +12,7 @@ int refreshDisplay = 1;
 int mode = 0;
 float voltsSaHMax; //Max sample and hold value
 float voltsSaHMin; //Min sample and hold value
-float valueGivenByADC(); //Predefinition
+float valueGivenByADC(void); //Predefinition
 float systemTime;
 
 void EXTI15_10_IRQHandler (void) { 
@@ -78,6 +79,7 @@ float valueGivenByADC(){
 	ADC1 -> CR2  = (ADC1->CR2 & 0xBFFFFFFF)|0x40000000;
 	
 	if (ADC -> CSR &= 0x00000002){
+		// I don't actually know why this is an if statement, but I'm scared to break it.
 		float ADCValue;
 		
 		ADCValue = ADC1 -> DR;
@@ -97,45 +99,52 @@ char*	arvStringfromValue(float volts, char unit){
 	float outputValue;
 	char stringOut[10];
 	char* ptrStringOut = stringOut;
-	if (unit == 'V')
+	
+	//Mode of operation checking
+	if (unit == 'V') //Volts
 	{
-		outputValue = ((volts - 1.5)/0.15 - 0.6);
+		outputValue = ((volts - 1.5f)/0.15f - 0.6f);
 	}
-	if (unit == (char)222) //Ohms
+	
+	else if (unit == (char)222) //Ohms
 	{
-		outputValue = (volts*995.8)/(5-volts);
+		outputValue = (volts*995.8f)/(5-volts);
 	}
-	if (outputValue >= 1)
+	
+	//Autoranging
+	if (fabs(outputValue) >= 1) //Fabs gives absolute value of float, polarity of number is irrelevant 
 	{
 		snprintf (stringOut, 10, "%.3f", outputValue);
 	}
 	else
 	{
-		if (outputValue >= 0.1)
+		if (fabs(outputValue) >= 0.1)
 		{
 			snprintf (stringOut, 10, "%.1fm", outputValue*1000);
 		}
 		else 
 		{
-			if (outputValue >= 0.01)
+			if (fabs(outputValue) >= 0.01)
 			{
 				snprintf (stringOut, 10, "%.2fm", outputValue*1000);
 			}
-			else 
+			else
 			{
-				snprintf (stringOut, 10, "%.3fm", outputValue*1000);
+					snprintf (stringOut, 10, "%.3fm", outputValue*1000);
 			}
 		}
 	}
+	//Append the string with the relevant unit
 	strcat(stringOut, &unit);
+	//Append a space
 	strcat(stringOut, " ");
+	
   return ptrStringOut;
 }
 
 
 char unitOfMode(){
 /* Reads the current mode of operation, returns the correct unit of measurement */
-
 	switch(mode)
 	{
 		case 0	:
@@ -145,10 +154,13 @@ char unitOfMode(){
 		case 2	:
 			return (char)222;
 		}
+	//If mode is ever equal to or greater than 3, you've broken something
+	return 'X';
 }
 
 void displayValue(float voltsADC){
-/* Takes a volt value and displays it on the LCD */
+/* Takes a volt value from ADC and displays it on the LCD 
+ * Only performs string and LCD operations, all convertions and calculates happen in arvStringfromValue*/
 
 	char LCD_out[15];
 	char LCD_minmax[15];
@@ -161,7 +173,7 @@ void displayValue(float voltsADC){
 		voltsSaHMin = compReturnLow(voltsADC, voltsSaHMin);
 	}
 	
-	//Auto-ranging 
+	//Pass the volt value to arvStringfromValue() and collect the string it returns.
 	strcpy(LCD_out, arvStringfromValue(voltsADC, unit));
 	
 
@@ -180,17 +192,19 @@ void displayValue(float voltsADC){
 }
  
  void SysTick_Handler (void){
-
-	refreshDisplay = 1;
+/*Many times a second, this is called*/
+	refreshDisplay = 1; //Claims that the display is ready to be refreshed
 	systemTime++;
 }
  
 void menuModeSelect (void){
-			PB_LCD_WriteChar((char)197);
-			PB_LCD_WriteChar((char)198);
+	/*This isn't a function that's ever called, I just wanted to remember the numbers of the following characters:*/
+			PB_LCD_WriteChar((char)197); //Up arrow
+			PB_LCD_WriteChar((char)198); //Down arrow
 }
 
 void initialiseAF(){
+	/*Something to do with initiliasing the ADC*/
 	//enabling the clock
 	RCC->AHB1ENR = (RCC->AHB1ENR & 0xFFFFFFF9) | 0x00000005;
 	//Timer 1 external triger and DAC out 1 enable
@@ -208,23 +222,6 @@ void initialiseAF(){
 	
 }
 
-void ADC_Control(){	
-	ADC1 -> CR2  = (ADC1->CR2 & 0xBFFFFFFF)|0x40000000;
-	
-	if (ADC -> CSR &= 0x00000002){
-		
-		float ADCconv = ADC1 -> DR;
-		char LCD_out[7];
-
-		DAC -> DHR12R1 = ADCconv;
-		PB_LCD_Init();
-		PB_LCD_Clear();
-		ADCconv = (ADCconv/4096)*3;
-		snprintf (LCD_out, 7, "%f", ADCconv);
-		PB_LCD_WriteString(LCD_out, 7);
-		
-	}
- }
 int main (void) {
 	//Something to do with interrupts, ask Tom, not me.
 	RCC -> AHB1ENR = (RCC->APB1ENR & 0xFFFFFFE7) | 0x00000018;
@@ -258,7 +255,6 @@ int main (void) {
 		if (refreshDisplay == 1)
 		{
 			displayValue(valueGivenByADC());
-			//ADC_Control();
 			refreshDisplay = 0;
 		}
 	}
