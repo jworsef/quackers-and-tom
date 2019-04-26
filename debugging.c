@@ -42,7 +42,7 @@ void EXTI15_10_IRQHandler (void) {
 	}
 	else if (GPIOE -> IDR &= 0x00002000){ //store button
 		EXTI -> PR = EXTI_PR_PR13;
-		store = 1;
+		store=1;
 	}
 	else if (GPIOE -> IDR &= 0x00001000){ //ohmMode button
 		EXTI -> PR = EXTI_PR_PR12;
@@ -399,14 +399,6 @@ void printLCD(struct ValuesNode* DisplayedNode)
 	//PB_LCD_GoToXY(0, 1);
 	//PB_LCD_WriteString(???, 16);
 }
-void moveToNextNode(struct ValuesNode* DisplayedNode)
-{
-	DisplayedNode=DisplayedNode->next;
-}
-void moveToPrevNode(struct ValuesNode* DisplayedNode)
-{
-	DisplayedNode=DisplayedNode->prev;
-}
 
 void Stored_func(struct ValuesList* list)
 {
@@ -437,12 +429,12 @@ void Stored_func(struct ValuesList* list)
 				if(nextNode==1 && list->size!=1)
 				{
 					nextNode=0;
-					moveToNextNode(displayedNode); // this fucntion is really simple do we really need it ?
+					displayedNode=displayedNode->next; // this fucntion is really simple do we really need it ?
 				}
 				if(prevNode==1 && list->size!=1)
 				{
 					prevNode=0;
-					moveToPrevNode(displayedNode); // this fucntion is really simple do we really need it ?
+					displayedNode=displayedNode->prev; // this fucntion is really simple do we really need it ?
 				}
 			}
 		refreshDisplay = 0;
@@ -487,8 +479,8 @@ void displayValue(struct ValuesList* list){
 	//Store value
 	if(store==1)
 	{	
+		storeValue(list, LCD_out);  /////////////////////changed that as well
 		store=0;
-		storeValue(list, arvStringfromValue(voltsADC, unit));
 	}
 	
 	//if the user tries to measure a value close to the max beep thrice (:P three times)
@@ -521,19 +513,21 @@ int main (void) {
 		
 	RCC -> APB2ENR = (RCC -> APB2ENR & 0xFFFFBFFE) | 0x00004001;
 
-	GPIOE -> MODER = (GPIOE -> MODER & 0x0FFFCFFF) | 0x00002000;
+	GPIOE -> MODER = (GPIOE -> MODER & 0x0000CFFF) | 0x00002000;
 		
-	GPIOE -> PUPDR = (GPIOE -> PUPDR & 0x0FFFCFFF) | 0xA0001000;
+	GPIOE -> PUPDR = (GPIOE -> PUPDR & 0x0000CFFF) | 0xAAAA1000;
 	
 	SYSCFG -> EXTICR[1] = (SYSCFG -> EXTICR[1] & 0xFFFFFCFF) | 0x00000400;
-			
-	SYSCFG -> EXTICR[3] = (SYSCFG -> EXTICR[3] & 0xFFFF00FF) | 0x00004400;
 	
-	EXTI -> IMR = (EXTI -> IMR & 0xFFFF3FBF) |	0x0000C040;
+	SYSCFG -> EXTICR[2] = (SYSCFG -> EXTICR[2] & 0xFFFF0000) | 0x00004444;
+			
+	SYSCFG -> EXTICR[3] = (SYSCFG -> EXTICR[3] & 0xFFFF0000) | 0x00004444;
+	
+	EXTI -> IMR = (EXTI -> IMR & 0xFFFF00BF) |	0x0000FF40;
 		
-	EXTI -> RTSR = (EXTI -> RTSR & 0xFFFF3FBF) |	0x0000C040;
+	EXTI -> RTSR = (EXTI -> RTSR & 0xFFFF00BF) |	0x0000FF40;
 
-	EXTI -> FTSR = (EXTI -> FTSR & 0xFFFF3FBF);
+	EXTI -> FTSR = (EXTI -> FTSR & 0xFFFF00BF);
 	
 	// My code starts here
 	SystemCoreClockUpdate();
@@ -547,6 +541,7 @@ int main (void) {
 	NVIC_EnableIRQ(EXTI15_10_IRQn);
 	EXTI15_10_IRQHandler ();
 	EXTI9_5_IRQHandler ();
+	SysTick_Handler();
 	
 	struct ValuesList* list=listConstructor();
 	list->size=0;
