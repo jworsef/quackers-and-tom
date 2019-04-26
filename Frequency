@@ -1,0 +1,60 @@
+#include "STM32F407xx.h"
+#include "Board_LED.h"
+#include "PB_LCD_Drivers.h"
+#include <stdio.h> 
+#include <stdlib.h>
+#include <string.h>
+
+int LEDState;
+int LEDState1;
+int period;
+int freq;
+int i;
+char LCD_out[7];
+
+void SysTick_Handler(){
+	PB_LCD_Clear();
+	snprintf (LCD_out, 10, "%d", freq);
+	PB_LCD_WriteString(LCD_out, 7);
+	freq=0;
+}
+
+void EXTI9_5_IRQHandler (void) { 
+	EXTI->PR = EXTI_PR_PR6;
+	freq=freq+1;
+}	
+
+int main (void) {
+	RCC -> AHB1ENR = (RCC->APB1ENR & 0xFFFFFFE2) | 0x0000001D;
+		
+	RCC -> APB2ENR = (RCC -> APB2ENR & 0xFFFFBFFE) | 0x00004001;
+
+	GPIOE -> MODER = (GPIOE -> MODER & 0xFFFFCFFF) | 0x00002000;
+		
+	GPIOE -> PUPDR = (GPIOE -> PUPDR & 0xFFFFCFFF) | 0x00001000;
+	
+	GPIOE -> AFR[0] = (GPIOE -> AFR[0] & 0x0FFFFFFF) | 0x10000000;
+
+	SYSCFG -> EXTICR[1] = (SYSCFG -> EXTICR[1] & 0xFFFFFCFF) | 0x00000400;
+	
+	EXTI -> IMR = (EXTI -> IMR & 0xFFFFFFBF) |	0x00000040;
+		
+	EXTI -> RTSR = (EXTI -> RTSR & 0xFFFFFFBF)|	0x00000040;
+
+	EXTI -> FTSR = (EXTI -> FTSR & 0xFFFFFFBF);
+		
+	NVIC_EnableIRQ(EXTI9_5_IRQn);
+	
+	initialiseLED();
+	
+	SystemCoreClockUpdate();
+	SysTick_Config(SystemCoreClock);
+	SysTick_Handler();
+	EXTI9_5_IRQHandler ();
+	PB_LCD_Init();
+	PB_LCD_Clear();
+
+
+	while(1){
+	}
+}
