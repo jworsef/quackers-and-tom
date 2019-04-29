@@ -649,54 +649,57 @@ void Rfunc(struct ValuesList* list)
 			}
 		}
 		volts =(valueGivenByADC()*995.8f)/(5-valueGivenByADC());
-		ohmModeCheck(volts);
-		if (ohmMode == 0)
+		if (refreshDisplay)
 		{
-			if (sahOn == 1)
+			//ohmModeCheck(volts);
+			if (ohmMode == 0)
 			{
-				voltsSaHMax = compReturnHigh(volts, voltsSaHMax);
-				voltsSaHMin = compReturnLow(volts, voltsSaHMin);
-			}
-			
-			//Pass the volt value to arvStringfromValue() and collect the string it returns.
-			snprintf(LCD_out, 10, "%f%c", volts,(char)222);
-			
+				if (sahOn == 1)
+				{
+					voltsSaHMax = compReturnHigh(volts, voltsSaHMax);
+					voltsSaHMin = compReturnLow(volts, voltsSaHMin);
+				}
+				
+				//Pass the volt value to arvStringfromValue() and collect the string it returns.
+				snprintf(LCD_out, 10, "%.3f%c", volts,(char)222);
+				
 
-			PB_LCD_Clear();
-			PB_LCD_WriteString(LCD_out, 16);
-			
-			if (sahOn == 1)
+				PB_LCD_Clear();
+				PB_LCD_WriteString(LCD_out, 16);
+				
+				if (sahOn == 1)
+				{
+					snprintf(LCD_minmax, 15, "%.2f%c %.2f%c", voltsSaHMin,(char)222,voltsSaHMax,(char)222);
+
+					PB_LCD_GoToXY(0, 1);
+					PB_LCD_WriteString(LCD_minmax, 16);
+				}
+			}
+			else
 			{
-				snprintf(LCD_minmax, 15, "%f%c %f%c", voltsSaHMin,(char)222,voltsSaHMax,(char)222);
+				if (sahOn == 1)
+				{
+					voltsSaHMax = compReturnHigh(volts, voltsSaHMax);
+					voltsSaHMin = compReturnLow(volts, voltsSaHMin);
+				}
+				
+				//Pass the volt value to arvStringfromValue() and collect the string it returns.
+				snprintf(LCD_out, 10, "%.3fK%c", volts,(char)222);
 
-				PB_LCD_GoToXY(0, 1);
-				PB_LCD_WriteString(LCD_minmax, 16);
+				PB_LCD_Clear();
+				PB_LCD_WriteString(LCD_out, 16);
+				
+				if (sahOn == 1)
+				{
+					snprintf(LCD_minmax, 15, "%.1fK%c %.1fK%c", voltsSaHMin,(char)222,voltsSaHMax,(char)222);
+
+					PB_LCD_GoToXY(0, 1);
+					PB_LCD_WriteString(LCD_minmax, 16);
+				}
+				
 			}
+			refreshDisplay=0;
 		}
-		else
-		{
-			if (sahOn == 1)
-			{
-				voltsSaHMax = compReturnHigh(volts, voltsSaHMax);
-				voltsSaHMin = compReturnLow(volts, voltsSaHMin);
-			}
-			
-			//Pass the volt value to arvStringfromValue() and collect the string it returns.
-			snprintf(LCD_out, 10, "%fK%c", volts,(char)222);
-
-			PB_LCD_Clear();
-			PB_LCD_WriteString(LCD_out, 16);
-			
-			if (sahOn == 1)
-			{
-				snprintf(LCD_minmax, 15, "%fK%c %fK%c", voltsSaHMin,(char)222,voltsSaHMax,(char)222);
-
-				PB_LCD_GoToXY(0, 1);
-				PB_LCD_WriteString(LCD_minmax, 16);
-			}
-			
-		}
-		
 		if(store==1)
 		{	
 			storeValue(list, LCD_out);  /////////////////////changed that as well
@@ -768,4 +771,4 @@ int main (void) {
 			refreshDisplay = 0;
 		}
 	}
-} 
+}  	
