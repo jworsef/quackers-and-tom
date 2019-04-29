@@ -119,10 +119,10 @@ void ohmModeCheck(float volts)
 		switch(ohmMode)
 	{
 		case 0:
-			if(volts>4.5492)
-			{
-				rBig();
-			}
+			//if(volts>4.5492)
+			//{
+				//rBig();
+			//}
 			break;
 		case 1:
 			if(volts>9.811)
