@@ -653,12 +653,12 @@ void Rfunc(struct ValuesList* list)
 				}
 			}*/
 		volts =(valueGivenByADC()*995.8f)/(5-valueGivenByADC());
-		ohmModeCheck(valueGivenByADC());
 		if (rFlag==1)
 		{
 			rFlag=0;
 			waitForSeconds(2);
 		}
+		ohmModeCheck(valueGivenByADC());
 		if (refreshDisplay==1)
 		{
 			refreshDisplay=0;
