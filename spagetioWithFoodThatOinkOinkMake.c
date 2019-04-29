@@ -39,7 +39,6 @@ void EXTI15_10_IRQHandler (void) {
 	else if (GPIOE -> IDR &= 0x00008000){
 		EXTI -> PR = EXTI_PR_PR15;
 		
-		
 		sahOn = 1 -sahOn;
 		voltsSaHMax = valueGivenByADC();
 		voltsSaHMin = valueGivenByADC();
@@ -577,7 +576,7 @@ void displayValue(struct ValuesList* list){
 	float voltsADC = valueGivenByADC();
 	//Sample and hold
 	
-	if (sahOn == 1)
+	if (sahOn == 1 && mode!=3)
 	{
 		voltsSaHMax = compReturnHigh(voltsADC, voltsSaHMax);
 		voltsSaHMin = compReturnLow(voltsADC, voltsSaHMin);
@@ -590,7 +589,7 @@ void displayValue(struct ValuesList* list){
 	PB_LCD_Clear();
 	PB_LCD_WriteString(LCD_out, 16);
 	
-	if (sahOn == 1)
+	if (sahOn == 1 && mode!=3)
 	{
 		strcpy(LCD_minmax, arvStringfromValue(voltsSaHMin, unit));
 		strncat(LCD_minmax, arvStringfromValue(voltsSaHMax, unit), 16);
