@@ -47,7 +47,11 @@ void EXTI15_10_IRQHandler (void) {
 	}
 	else if (GPIOE -> IDR &= 0x00001000){ //ohmMode button
 		EXTI -> PR = EXTI_PR_PR12;
-		ohmMode=1-ohmMode;//swap between 0 <--> 1 
+		ohmMode++;	
+		if (ohmMode == 9)
+		{
+			ohmMode = 0;
+		}
 	}
 	else if (GPIOE -> IDR &= 0x00000800){ //next node button
 		EXTI -> PR = EXTI_PR_PR11;
@@ -86,7 +90,7 @@ void beep()
 }
 void rBig()
 {
-	B_LCD_Clear();
+	PB_LCD_Clear();
 	PB_LCD_WriteString("Change Mode",16);
 	PB_LCD_GoToXY(0, 1);
 	PB_LCD_WriteString("R too large", 16);
@@ -621,21 +625,29 @@ void displayValue(struct ValuesList* list){
 }
 void Rfunc(struct ValuesList* list)
 {
-	int CurrentOhmMode=-1;
+	ohmMode=0;
+	int CurrentOhmMode=0;
 	char LCD_out[15];
 	char msg[15];
 	char LCD_minmax[15];
-	char buffer[6];
 	float volts;
 	while(mode==2)
-		if (ohmMode!=CurrentOhmMode)
-		{
+	{
+		if (ohmMode==CurrentOhmMode)
+			{
 			snprintf(msg,15,"Mode %i",ohmMode);
 			PB_LCD_Clear();
 			PB_LCD_WriteString(msg,16);
 			waitForSeconds(2);
+			if(ohmMode==8)
+			{
+				CurrentOhmMode=0;
+			}
+			else
+			{
+				CurrentOhmMode=ohmMode+1;
+			}
 		}
-		CurrentOhmMode=ohmMode;
 		volts =(valueGivenByADC()*995.8f)/(5-valueGivenByADC());
 		ohmModeCheck(volts);
 		if (ohmMode == 0)
@@ -647,8 +659,7 @@ void Rfunc(struct ValuesList* list)
 			}
 			
 			//Pass the volt value to arvStringfromValue() and collect the string it returns.
-			snprintf(LCD_out, 10, "%f", volts);
-			strcat(LCD_out, (char)222);
+			snprintf(LCD_out, 10, "%f%c", volts,(char)222);
 			
 
 			PB_LCD_Clear();
@@ -656,12 +667,7 @@ void Rfunc(struct ValuesList* list)
 			
 			if (sahOn == 1)
 			{
-				snprintf(LCD_minmax, 15, "%f", voltsSaHMin);
-				strcat(LCD_minmax, (char)222);
-				strcat(LCD_minmax," ");
-				snprintf(buffer, 15, "%f", voltsSaHMax);
-				strcat(LCD_minmax, buffer);
-				strcat(LCD_minmax, (char)222);
+				snprintf(LCD_minmax, 15, "%f%c %f%c", voltsSaHMin,(char)222,voltsSaHMax,(char)222);
 
 				PB_LCD_GoToXY(0, 1);
 				PB_LCD_WriteString(LCD_minmax, 16);
@@ -676,20 +682,14 @@ void Rfunc(struct ValuesList* list)
 			}
 			
 			//Pass the volt value to arvStringfromValue() and collect the string it returns.
-			snprintf(LCD_out, 10, "%fK", volts);
-			strcat(LCD_out, (char)222);
+			snprintf(LCD_out, 10, "%fK%c", volts,(char)222);
 
 			PB_LCD_Clear();
 			PB_LCD_WriteString(LCD_out, 16);
 			
 			if (sahOn == 1)
 			{
-				snprintf(LCD_minmax, 15, "%fK", voltsSaHMin);
-				strcat(LCD_minmax, (char)222);
-				strcat(LCD_minmax," ");
-				snprintf(buffer, 15, "%fK", voltsSaHMax);
-				strcat(LCD_minmax, buffer);
-				strcat(LCD_minmax, (char)222);
+				snprintf(LCD_minmax, 15, "%fK%c %fK%c", voltsSaHMin,(char)222,voltsSaHMax,(char)222);
 
 				PB_LCD_GoToXY(0, 1);
 				PB_LCD_WriteString(LCD_minmax, 16);
@@ -703,6 +703,7 @@ void Rfunc(struct ValuesList* list)
 			store=0;
 		}
 		
+	}
 }
 int main (void) {
 	//Something to do with interrupts, ask Tom, not me.
