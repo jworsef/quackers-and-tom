@@ -710,14 +710,14 @@ void Rfunc(struct ValuesList* list)
 				}
 				
 				//Pass the volt value to arvStringfromValue() and collect the string it returns.
-				snprintf(LCD_out, 10, "%0.3fK%c", volts,(char)222);
+				snprintf(LCD_out, 10, "%0.3fK%c", volts/1000,(char)222);
 
 				PB_LCD_Clear();
 				PB_LCD_WriteString(LCD_out, 16);
 				
 				if (sahOn == 1)
 				{
-					snprintf(LCD_minmax, 15, "%0.2fK%c %0.2fK%c", voltsSaHMin,(char)222,voltsSaHMax,(char)222);
+					snprintf(LCD_minmax, 15, "%0.2fK%c %0.2fK%c", voltsSaHMin/1000,(char)222,voltsSaHMax/1000,(char)222);
 
 					PB_LCD_GoToXY(0, 1);
 					PB_LCD_WriteString(LCD_minmax, 16);
