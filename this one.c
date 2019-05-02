@@ -123,12 +123,12 @@ void ohmModeCheck(float volts)
 			rMult = 995.8f;
 			if(volts>4.5492)
 			{
-				rBig();
+				//rBig();
 			}
 			break;
 		case 1:
 			rMult = 0.00010018f;
-			if(volts>9.811)
+			if(volts>9.611)
 			{
 				rBig();
 			}
@@ -143,25 +143,25 @@ void ohmModeCheck(float volts)
 			{
 				rBig();
 			}
-			else if(0.1<volts<0.995)
+			else if(0.1<volts<0.805)
 			{
 				rSmall();
 			}
 			break;
 		case 3: 
-			rMult = 0.00000491f;
+			rMult = 0.0000049f;
 			if(volts>1.7543)
 			{
 				rBig();
 			}
-			else if(0.1<volts<1.3236)
+			else if(0.1<volts<1.f)
 			{
 				rSmall();
 			}
 			break;
 		case 4:
-			rMult = 0.0000024f;
-			if(volts>1.2432)
+			rMult = 0.00000222f;
+			if(volts>1.2320)
 			{
 				rBig();
 			}
@@ -171,8 +171,8 @@ void ohmModeCheck(float volts)
 			}
 			break;
 		case 5:
-			rMult = 0.00000139f;
-			if(volts>0.9983)
+			rMult = 0.00000137f;
+			if(volts>0.96)
 			{
 				rBig();
 			}
@@ -182,8 +182,8 @@ void ohmModeCheck(float volts)
 			}
 			break;
 		case 6:
-			rMult = 0.00000113f;
-			if(volts>0.978)
+			rMult = 0.00000111f;
+			if(volts>0.940)
 			{
 				rBig();
 			}
@@ -194,7 +194,7 @@ void ohmModeCheck(float volts)
 			break;
 		case 7:
 			rMult = 0.00000102f;
-			if(volts>0.9846)
+			if(volts>0.990)
 			{
 				rBig();
 			}
@@ -205,11 +205,11 @@ void ohmModeCheck(float volts)
 			break;
 		case 8:
 			rMult = 0.00000094f;
-			if(volts>0.9432)
+			if(volts>0.99)
 			{
 				rBig();
 			}
-			else if(0.1<volts<0.9176)
+			else if(0.1<volts<0.917)
 			{
 				rSmall();
 			}
@@ -664,7 +664,7 @@ void Rfunc(struct ValuesList* list)
 				}
 			}*/
 	if (ohmMode != 0){
-		volts =(((valueGivenByADC() - 1.5f)/0.15f - 0.2f)/rMult);//(valueGivenByADC()*995.8f)/(5-valueGivenByADC());
+		volts =(((volts - 1.5f)/0.15f - 0.2f)/rMult);//(valueGivenByADC()*995.8f)/(5-valueGivenByADC());
 	}
 	else{
 		volts = (((volts - 1.5f)/0.15f - 0.2f)*995.8f)/(5-((volts - 1.5f)/0.15f - 0.2f));
@@ -674,7 +674,7 @@ void Rfunc(struct ValuesList* list)
 			rFlag=0;
 			waitForSeconds(2);
 		}
-		ohmModeCheck(valueGivenByADC());
+		ohmModeCheck((valueGivenByADC() - 1.5f)/0.15f - 0.2f);
 		if (refreshDisplay==1)
 		{
 			refreshDisplay=0;
@@ -799,4 +799,3 @@ int main (void) {
 		}
 	}
 } 
-
